@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4d96ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Domácí úkoly">
+<title>Domácí úkoly</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --safr: #4d96ff;
+    --holas: #ff6b6b;
+    --both: #6bcb77;
+    --bg: #f4f7ff;
+    --card: #ffffff;
+    --text: #2a2a2a;
+    --muted: #999;
+    --shadow: 0 4px 20px rgba(0,0,0,0.08);
+    --radius: 20px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  header {
+    background: linear-gradient(135deg, #4d96ff 0%, #ff6b6b 100%);
+    padding: 28px 20px 70px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: -2px; left: 0; right: 0;
+    height: 50px;
+    background: var(--bg);
+    border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  }
+  header h1 { font-family: 'Fredoka One', cursive; font-size: 2.2rem; color: white; text-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+  header p { color: rgba(255,255,255,0.85); font-weight: 700; font-size: 0.95rem; margin-top: 4px; }
+
+  .container { max-width: 720px; margin: 0 auto; padding: 0 16px 60px; }
+
+  .family-tabs { display: flex; gap: 12px; margin: 20px 0 16px; justify-content: center; }
+  .family-tab {
+    flex: 1; max-width: 200px;
+    padding: 14px 10px;
+    border-radius: 18px;
+    border: 3px solid transparent;
+    background: var(--card);
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    text-align: center;
+    transition: all .25s;
+    font-family: inherit;
+  }
+  .family-tab:hover { transform: translateY(-3px); }
+  .family-tab.active { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(0,0,0,0.14); }
+  .family-tab.safr { border-color: var(--safr); }
+  .family-tab.holas { border-color: var(--holas); }
+  .family-tab .tab-emoji { font-size: 1.8rem; display: block; }
+  .family-tab .tab-name { font-family: 'Fredoka One', cursive; font-size: 1.1rem; display: block; margin-top: 4px; }
+  .family-tab.safr .tab-name { color: var(--safr); }
+  .family-tab.holas .tab-name { color: var(--holas); }
+  .tab-badge {
+    display: inline-block;
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 800;
+    border-radius: 20px;
+    padding: 1px 7px;
+    margin-top: 3px;
+  }
+
+  .view-tabs { display: flex; background: var(--card); border-radius: 14px; padding: 3px; box-shadow: var(--shadow); margin-bottom: 16px; gap: 3px; }
+  .view-tab-btn {
+    flex: 1; padding: 9px;
+    border: none; background: transparent;
+    border-radius: 11px;
+    font-family: 'Fredoka One', cursive; font-size: 0.95rem;
+    cursor: pointer; color: var(--muted); transition: all .2s;
+  }
+  .view-tab-btn.active { color: white; }
+
+  .week-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--card); border-radius: var(--radius);
+    padding: 14px 18px; box-shadow: var(--shadow); margin-bottom: 14px;
+  }
+  .week-nav-btn {
+    width: 38px; height: 38px; border: none;
+    background: #f0f4ff; border-radius: 10px;
+    font-size: 1.1rem; cursor: pointer; transition: background .15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .week-nav-btn:hover { background: #dce8ff; }
+  .week-nav-center { text-align: center; flex: 1; }
+  .week-num { font-family: 'Fredoka One', cursive; font-size: 1.3rem; }
+  .week-date { font-size: 0.8rem; color: var(--muted); font-weight: 700; margin-top: 1px; }
+  .today-btn {
+    padding: 5px 12px; border: none;
+    background: #4d96ff22; color: var(--safr);
+    border-radius: 10px; font-family: inherit;
+    font-weight: 700; font-size: 0.8rem; cursor: pointer; margin-top: 4px;
+  }
+  .today-btn:hover { background: #4d96ff33; }
+
+  .progress-wrap { background: var(--card); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow); margin-bottom: 14px; }
+  .progress-label { display: flex; justify-content: space-between; font-weight: 700; font-size: 0.85rem; margin-bottom: 8px; }
+  .progress-bar-bg { background: #eee; border-radius: 10px; height: 12px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; border-radius: 10px; transition: width .5s ease; }
+
+  .section-title { font-family: 'Fredoka One', cursive; font-size: 1.15rem; margin: 18px 0 10px; }
+
+  .task-card {
+    background: var(--card); border-radius: var(--radius);
+    padding: 15px 18px; margin-bottom: 10px;
+    box-shadow: var(--shadow);
+    display: flex; align-items: center; gap: 14px;
+    border-left: 5px solid transparent; transition: all .2s;
+  }
+  .task-card:hover { transform: translateX(3px); }
+  .task-card.done { opacity: 0.5; background: #f8f8f8; }
+  .task-card.done .task-title { text-decoration: line-through; color: var(--muted); }
+
+  .task-check {
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 3px solid; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0; font-size: 1.1rem; transition: all .2s; background: transparent;
+  }
+  .task-check.checked { color: white !important; border-color: transparent !important; }
+  .task-check:hover { transform: scale(1.12); }
+
+  .task-info { flex: 1; }
+  .task-title { font-weight: 800; font-size: 1rem; }
+  .task-who {
+    display: inline-flex; align-items: center; gap: 5px; margin-top: 4px;
+    font-size: 0.75rem; font-weight: 700; padding: 2px 10px; border-radius: 20px;
+  }
+  .task-who.safr { background: #4d96ff22; color: var(--safr); }
+  .task-who.holas { background: #ff6b6b22; color: var(--holas); }
+  .task-who.both { background: #6bcb7722; color: #3a9b48; }
+
+  .month-label { font-family: 'Fredoka One', cursive; font-size: 1rem; color: var(--muted); margin: 16px 0 6px 4px; }
+  .week-row {
+    background: var(--card); border-radius: 14px; padding: 12px 16px; margin-bottom: 6px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    display: flex; align-items: center; gap: 10px;
+    cursor: pointer; transition: all .2s; border-left: 4px solid transparent;
+  }
+  .week-row:hover { transform: translateX(3px); box-shadow: var(--shadow); }
+  .week-row.current-week { border-left-color: var(--safr); background: #f0f6ff; }
+  .week-row .wr-num { font-family: 'Fredoka One', cursive; font-size: 1rem; min-width: 28px; color: var(--muted); }
+  .week-row .wr-date { font-size: 0.75rem; color: var(--muted); font-weight: 600; min-width: 140px; }
+  .week-row .wr-tasks { display: flex; gap: 5px; flex-wrap: wrap; flex: 1; }
+  .wr-chip { font-size: 0.68rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
+  .wr-progress { font-size: 0.75rem; font-weight: 700; color: var(--muted); white-space: nowrap; }
+
+  .empty { text-align: center; padding: 40px; color: var(--muted); font-weight: 700; font-size: 0.95rem; }
+  .empty .em { font-size: 2.5rem; display: block; margin-bottom: 10px; }
+
+  @keyframes pop { 0%{transform:scale(1)} 50%{transform:scale(1.35)} 100%{transform:scale(1)} }
+  .popping { animation: pop .3s ease; }
+
+  /* Notification settings */
+  .notif-card {
+    background: var(--card); border-radius: var(--radius);
+    padding: 18px 20px; box-shadow: var(--shadow); margin-bottom: 12px;
+  }
+  .notif-card h3 { font-family: 'Fredoka One', cursive; font-size: 1.1rem; margin-bottom: 14px; display:flex; align-items:center; gap:8px; }
+  .notif-row { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
+  .notif-label { font-weight:700; font-size:0.88rem; color:var(--text); }
+  .notif-sublabel { font-size:0.75rem; color:var(--muted); font-weight:600; margin-top:2px; }
+  .notif-select {
+    padding:8px 12px; border:2px solid #eee; border-radius:11px;
+    font-family:inherit; font-weight:700; font-size:0.85rem;
+    background:#fafafa; cursor:pointer; outline:none;
+    transition: border-color .2s;
+  }
+  .notif-select:focus { border-color: var(--safr); }
+  .notif-time {
+    padding:8px 12px; border:2px solid #eee; border-radius:11px;
+    font-family:inherit; font-weight:700; font-size:0.9rem;
+    background:#fafafa; outline:none; width:110px;
+    transition: border-color .2s;
+  }
+  .notif-time:focus { border-color: var(--safr); }
+  .toggle-switch { position:relative; width:48px; height:26px; flex-shrink:0; }
+  .toggle-switch input { opacity:0; width:0; height:0; }
+  .toggle-slider {
+    position:absolute; inset:0; border-radius:26px;
+    background:#ddd; cursor:pointer; transition:.3s;
+  }
+  .toggle-slider::before {
+    content:''; position:absolute;
+    width:20px; height:20px; border-radius:50%;
+    background:white; left:3px; top:3px;
+    transition:.3s; box-shadow:0 1px 4px rgba(0,0,0,0.2);
+  }
+  input:checked + .toggle-slider { background: #6bcb77; }
+  input:checked + .toggle-slider::before { transform: translateX(22px); }
+  .notif-btn {
+    width:100%; padding:11px; border:none; border-radius:13px;
+    font-family:'Fredoka One',cursive; font-size:1rem; cursor:pointer;
+    transition:all .2s; margin-top:4px;
+  }
+  .notif-btn:hover { opacity:.85; transform:translateY(-1px); }
+  .notif-status {
+    font-size:0.78rem; font-weight:700; padding:6px 12px;
+    border-radius:10px; text-align:center; margin-top:8px;
+  }
+  .notif-status.ok { background:#6bcb7722; color:#3a9b48; }
+  .notif-status.warn { background:#ffd93d33; color:#b8860b; }
+  .notif-status.err { background:#ff6b6b22; color:#cc3333; }
+
+  .settings-fab {
+    position: fixed; bottom: 20px; right: 20px;
+    width: 52px; height: 52px; border-radius: 50%;
+    border: none; font-size: 1.4rem; cursor: pointer;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+    display: flex; align-items:center; justify-content:center;
+    transition: all .2s; z-index: 50;
+  }
+  .settings-fab:hover { transform: scale(1.1) rotate(20deg); }
+
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:100; align-items:center; justify-content:center; padding:16px; }
+  .modal-overlay.open { display:flex; }
+  .modal { background:var(--card); border-radius:24px; padding:24px; width:100%; max-width:400px; box-shadow:0 20px 60px rgba(0,0,0,0.2); max-height:90vh; overflow-y:auto; }
+  .modal-title { font-family:'Fredoka One',cursive; font-size:1.4rem; margin-bottom:18px; }
+  .modal-close { float:right; background:none; border:none; font-size:1.4rem; cursor:pointer; color:var(--muted); margin-top:-4px; }
+  .family-section { padding:14px; border-radius:14px; margin-bottom:12px; }
+  .family-section.safr-bg { background:#4d96ff11; border:2px solid #4d96ff33; }
+  .family-section.holas-bg { background:#ff6b6b11; border:2px solid #ff6b6b33; }
+  .family-section-title { font-family:'Fredoka One',cursive; font-size:1rem; margin-bottom:12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🏠 Domácí úkoly</h1>
+  <p id="header-date"></p>
+</header>
+<div class="container">
+  <div class="family-tabs">
+    <button class="family-tab safr active" id="tab-safr" onclick="setFamily('safr')">
+      <span class="tab-emoji">🔵</span>
+      <span class="tab-name">Šafrovi</span>
+      <span class="tab-badge" id="badge-safr"></span>
+    </button>
+    <button class="family-tab holas" id="tab-holas" onclick="setFamily('holas')">
+      <span class="tab-emoji">🔴</span>
+      <span class="tab-name">Holasovi</span>
+      <span class="tab-badge" id="badge-holas"></span>
+    </button>
+  </div>
+  <div class="view-tabs">
+    <button class="view-tab-btn active" id="vbtn-week" onclick="setView('week')">📅 Tento týden</button>
+    <button class="view-tab-btn" id="vbtn-all" onclick="setView('all')">📋 Celý rok</button>
+  </div>
+  <div id="main"></div>
+</div>
+
+<!-- Settings FAB -->
+<button class="settings-fab" id="settings-fab" onclick="openSettings()" title="Nastavení upozornění">🔔</button>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeSettings()">✕</button>
+    <div class="modal-title">🔔 Upozornění</div>
+    <div id="notif-permission-warn" class="notif-status warn" style="display:none;margin-bottom:14px">⚠️ Notifikace nejsou povoleny. Klikni "Povolit" níže.</div>
+    <div id="notif-permission-ok" class="notif-status ok" style="display:none;margin-bottom:14px">✓ Notifikace jsou povoleny v prohlížeči</div>
+    <div id="notif-permission-na" class="notif-status err" style="display:none;margin-bottom:14px">✗ Tento prohlížeč nepodporuje notifikace</div>
+    <div class="family-section safr-bg">
+      <div class="family-section-title" style="color:var(--safr)">🔵 Šafrovi</div>
+      <div class="notif-row">
+        <div><div class="notif-label">Zapnout připomenutí</div></div>
+        <label class="toggle-switch"><input type="checkbox" id="notif-safr-enabled" onchange="saveNotifSettings()"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="notif-row">
+        <div><div class="notif-label">Den</div></div>
+        <select class="notif-select" id="notif-safr-day" onchange="saveNotifSettings()">
+          <option value="1">Pondělí</option><option value="2">Úterý</option><option value="3">Středa</option>
+          <option value="4">Čtvrtek</option><option value="5">Pátek</option><option value="6">Sobota</option><option value="0">Neděle</option>
+        </select>
+      </div>
+      <div class="notif-row">
+        <div><div class="notif-label">Čas</div></div>
+        <input type="time" class="notif-time" id="notif-safr-time" value="08:00" onchange="saveNotifSettings()">
+      </div>
+    </div>
+    <div class="family-section holas-bg">
+      <div class="family-section-title" style="color:var(--holas)">🔴 Holasovi</div>
+      <div class="notif-row">
+        <div><div class="notif-label">Zapnout připomenutí</div></div>
+        <label class="toggle-switch"><input type="checkbox" id="notif-holas-enabled" onchange="saveNotifSettings()"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="notif-row">
+        <div><div class="notif-label">Den</div></div>
+        <select class="notif-select" id="notif-holas-day" onchange="saveNotifSettings()">
+          <option value="1">Pondělí</option><option value="2">Úterý</option><option value="3">Středa</option>
+          <option value="4">Čtvrtek</option><option value="5">Pátek</option><option value="6">Sobota</option><option value="0">Neděle</option>
+        </select>
+      </div>
+      <div class="notif-row">
+        <div><div class="notif-label">Čas</div></div>
+        <input type="time" class="notif-time" id="notif-holas-time" value="08:00" onchange="saveNotifSettings()">
+      </div>
+    </div>
+    <button class="notif-btn" id="notif-allow-btn" onclick="requestPermission()" style="background:linear-gradient(135deg,#4d96ff,#6bcb77);color:white">🔔 Povolit notifikace</button>
+    <button class="notif-btn" onclick="sendTestNotif()" style="background:#f2f2f2;color:var(--text);margin-top:8px">🧪 Otestovat notifikaci</button>
+    <div style="font-size:0.72rem;color:var(--muted);font-weight:600;text-align:center;margin-top:12px;line-height:1.5">
+      💡 Aby notifikace fungovala i při zamčeném tabletu, přidej stránku na plochu (Sdílet → Přidat na plochu).
+    </div>
+  </div>
+</div>
+<script>
+const SCHEDULE = [
+  {w:1,  date:"05. - 11. leden",    sekani:"Holasovi", vyvoz:"-",        schody:"Šafrovi",  pergola:"-",       bazen:"Holasovi, Šafrovi - zazimování bazénu"},
+  {w:2,  date:"12. - 18. leden",    sekani:"-",        vyvoz:"Šafrovi",  schody:"-",        pergola:"Holasovi",bazen:"-"},
+  {w:3,  date:"19. - 25. leden",    sekani:"Šafrovi",  vyvoz:"-",        schody:"Holasovi", pergola:"-",       bazen:"-"},
+  {w:4,  date:"26. - 01. únor",     sekani:"-",        vyvoz:"Holasovi", schody:"-",        pergola:"Šafrovi", bazen:"-"},
+  {w:5,  date:"02. - 08. únor",     sekani:"Holasovi", vyvoz:"-",        schody:"Šafrovi",  pergola:"-",       bazen:"-"},
+  {w:6,  date:"09. - 15. únor",     sekani:"-",        vyvoz:"Šafrovi",  schody:"-",        pergola:"Holasovi",bazen:"-"},
+  {w:7,  date:"16. - 22. únor",     sekani:"Šafrovi",  vyvoz:"-",        schody:"Holasovi", pergola:"-",       bazen:"-"},
+  {w:8,  date:"23. - 01. březen",   sekani:"-",        vyvoz:"Holasovi", schody:"-",        pergola:"Šafrovi", bazen:"-"},
+  {w:9,  date:"02. - 08. březen",   sekani:"Holasovi", vyvoz:"-",        schody:"Šafrovi",  pergola:"-",       bazen:"-"},
+  {w:10, date:"09. - 15. březen",   sekani:"-",        vyvoz:"Šafrovi",  schody:"-",        pergola:"Holasovi",bazen:"-"},
+  {w:11, date:"16. - 22. březen",   sekani:"Šafrovi",  vyvoz:"-",        schody:"Holasovi", pergola:"-",       bazen:"-"},
+  {w:12, date:"23. - 29. březen",   sekani:"-",        vyvoz:"Holasovi", schody:"-",        pergola:"Šafrovi", bazen:"-"},
+  {w:13, date:"30. - 05. duben",    sekani:"Holasovi", vyvoz:"-",        schody:"Šafrovi",  pergola:"-",       bazen:"-"},
+  {w:14, date:"06. - 12. duben",    sekani:"-",        vyvoz:"Šafrovi",  schody:"-",        pergola:"Holasovi",bazen:"-"},
+  {w:15, date:"13. - 19. duben",    sekani:"Šafrovi",  vyvoz:"-",        schody:"Holasovi", pergola:"-",       bazen:"-"},
+  {w:16, date:"20. - 26. duben",    sekani:"-",        vyvoz:"Holasovi", schody:"-",        pergola:"Šafrovi", bazen:"-"},
+  {w:17, date:"27. - 03. květen",   sekani:"Holasovi", vyvoz:"-",        schody:"Šafrovi",  pergola:"-",       bazen:"-"},
+  {w:18, date:"04. - 10. květen",   sekani:"-",        vyvoz:"Šafrovi",  schody:"-",        pergola:"Holasovi",bazen:"-"},
+  {w:19, date:"11. - 17. květen",   sekani:"Šafrovi",  vyvoz:"-",        schody:"Holasovi", pergola:"-",       bazen:"-"},
+  {w:20, date:"18. - 24. květen",   sekani:"-",        vyvoz:"Holasovi", schody:"-",        pergola:"Šafrovi", bazen:"-"},
+  {w:21, date:"25. - 31. květen",   sekani:"Holasovi", vyvoz:"-",        schody:"Šafrovi",  pergola:"-",       bazen:"-"},
+  {w:22, date:"01. - 07. červen",   sekani:"-",        vyvoz:"Šafrovi",  schody:"-",        pergola:"Holasovi",bazen:"Holasovi"},
+  {w:23, date:"08. - 14. červen",   sekani:"Šafrovi",  vyvoz:"-",        schody:"Holasovi", pergola:"-",       bazen:"Šafrovi"},
+  {w:24, date:"15. - 21. červen",   sekani:"-",        vyvoz:"Holasovi", schody:"-",        pergola:"Šafrovi", bazen:"Holasovi"},
+  {w:25, date:"22. - 28. červen",   sekani:"Holasovi", vyvoz:"-",        schody:"Šafrovi",  pergola:"-",       bazen:"Šafrovi"},
+  {w:26, date:"29. - 05. červenec", sekani:"-",        vyvoz:"Šafrovi",  schody:"-",        pergola:"Holasovi",bazen:"Holasovi"},
+  {w:27, date:"06. - 12. červenec", sekani:"Šafrovi",  vyvoz:"-",        schody:"Holasovi", pergola:"-",       bazen:"Šafrovi"},
+  {w:28, date:"13. - 19. červenec", sekani:"-",        vyvoz:"Holasovi", schody:"-",        pergola:"Šafrovi", bazen:"Holasovi"},
+  {w:29, date:"20. - 26. červenec", sekani:"Holasovi", vyvoz:"-",        schody:"Šafrovi",  pergola:"-",       bazen:"Šafrovi"},
+  {w:30, date:"27. - 02. srpen",    sekani:"-",        vyvoz:"Šafrovi",  schody:"-",        pergola:"Holasovi",bazen:"Holasovi"},
+  {w:31, date:"03. - 09. srpen",    sekani:"Šafrovi",  vyvoz:"-",        schody:"Holasovi", pergola:"-",       bazen:"Šafrovi"},
+  {w:32, date:"10. - 16. srpen",    sekani:"-",        vyvoz:"Holasovi", schody:"-",        pergola:"Šafrovi", bazen:"Holasovi"},
+  {w:33, date:"17. - 23. srpen",    sekani:"Holasovi", vyvoz:"-",        schody:"Šafrovi",  pergola:"-",       bazen:"Šafrovi"},
+  {w:34, date:"24. - 30. srpen",    sekani:"-",        vyvoz:"Šafrovi",  schody:"-",        pergola:"Holasovi",bazen:"Holasovi"},
+  {w:35, date:"31. - 06. září",     sekani:"Šafrovi",  vyvoz:"-",        schody:"Holasovi", pergola:"-",       bazen:"Šafrovi"},
+  {w:36, date:"07. - 13. září",     sekani:"-",        vyvoz:"Holasovi", schody:"-",        pergola:"Šafrovi", bazen:"Holasovi"},
+  {w:37, date:"14. - 20. září",     sekani:"Holasovi", vyvoz:"-",        schody:"Šafrovi",  pergola:"-",       bazen:"Šafrovi"},
+  {w:38, date:"21. - 27. září",     sekani:"-",        vyvoz:"Šafrovi",  schody:"-",        pergola:"Holasovi",bazen:"Holasovi"},
+  {w:39, date:"28. - 04. říjen",    sekani:"Šafrovi",  vyvoz:"-",        schody:"Holasovi", pergola:"-",       bazen:"Šafrovi"},
+  {w:40, date:"05. - 11. říjen",    sekani:"-",        vyvoz:"Holasovi", schody:"-",        pergola:"Šafrovi", bazen:"Holasovi, Šafrovi - zazimování bazénu"},
+  {w:41, date:"12. - 18. říjen",    sekani:"Holasovi", vyvoz:"-",        schody:"Šafrovi",  pergola:"-",       bazen:"-"},
+  {w:42, date:"19. - 25. říjen",    sekani:"-",        vyvoz:"Šafrovi",  schody:"-",        pergola:"Holasovi",bazen:"-"},
+  {w:43, date:"26. - 01. listopad", sekani:"Šafrovi",  vyvoz:"-",        schody:"Holasovi", pergola:"-",       bazen:"-"},
+  {w:44, date:"02. - 08. listopad", sekani:"-",        vyvoz:"Holasovi", schody:"-",        pergola:"Šafrovi", bazen:"-"},
+  {w:45, date:"09. - 15. listopad", sekani:"Holasovi", vyvoz:"-",        schody:"Šafrovi",  pergola:"-",       bazen:"-"},
+  {w:46, date:"16. - 22. listopad", sekani:"-",        vyvoz:"Šafrovi",  schody:"-",        pergola:"Holasovi",bazen:"-"},
+  {w:47, date:"23. - 29. listopad", sekani:"Šafrovi",  vyvoz:"-",        schody:"Holasovi", pergola:"-",       bazen:"-"},
+  {w:48, date:"30. - 06. prosinec", sekani:"-",        vyvoz:"Holasovi", schody:"-",        pergola:"Šafrovi", bazen:"-"},
+  {w:49, date:"07. - 13. prosinec", sekani:"Holasovi", vyvoz:"-",        schody:"Šafrovi",  pergola:"-",       bazen:"-"},
+  {w:50, date:"14. - 20. prosinec", sekani:"-",        vyvoz:"Šafrovi",  schody:"-",        pergola:"Holasovi",bazen:"-"},
+  {w:51, date:"21. - 27. prosinec", sekani:"Šafrovi",  vyvoz:"-",        schody:"Holasovi", pergola:"-",       bazen:"-"},
+  {w:52, date:"28. - 03. leden",    sekani:"-",        vyvoz:"Holasovi", schody:"-",        pergola:"Šafrovi", bazen:"-"},
+];
+
+const TASK_KEYS = ['sekani','vyvoz','schody','pergola','bazen'];
+const TASK_LABELS = {
+  sekani: '🌿 Sekání zahrady',
+  vyvoz:  '🗑️ Vývoz popelnic',
+  schody: '🧹 Úklid schodů',
+  pergola:'🪑 Úklid pergoly',
+  bazen:  '🏊 Péče o bazén',
+};
+
+let state = { family: 'safr', view: 'week', currentWeek: 1, done: {} };
+
+function getCurrentWeek() {
+  const start = new Date(2026, 0, 5);
+  const today = new Date();
+  const diff = Math.floor((today - start) / (7*24*3600*1000));
+  return Math.max(1, Math.min(52, diff + 1));
+}
+
+function save() { try { localStorage.setItem('ukoly-v2', JSON.stringify(state.done)); } catch(e){} }
+function load() { try { const d = localStorage.getItem('ukoly-v2'); if(d) state.done = JSON.parse(d); } catch(e){} }
+function getKey(w,t,f) { return `${w}-${t}-${f}`; }
+function isDone(w,t,f) { return !!state.done[getKey(w,t,f)]; }
+function toggleDone(w,t,f) { const k=getKey(w,t,f); state.done[k]=!state.done[k]; save(); }
+
+function whoFor(val, family) {
+  if (!val || val==='-') return 'none';
+  const v = val.toLowerCase();
+  const hasSafr = v.includes('šafrovi');
+  const hasHolas = v.includes('holasovi');
+  if (hasSafr && hasHolas) return 'both';
+  if (family==='safr' && hasSafr) return 'mine';
+  if (family==='holas' && hasHolas) return 'mine';
+  return 'other';
+}
+
+function myTasks(week, family) {
+  const row = SCHEDULE.find(r=>r.w===week);
+  if (!row) return [];
+  return TASK_KEYS.filter(k => { const w=whoFor(row[k],family); return w==='mine'||w==='both'; });
+}
+
+function weekProgress(week, family) {
+  const tasks = myTasks(week, family);
+  if (!tasks.length) return null;
+  const done = tasks.filter(t=>isDone(week,t,family)).length;
+  return {done, total:tasks.length};
+}
+
+function getColor(f) { return f==='safr' ? '#4d96ff' : '#ff6b6b'; }
+
+function setFamily(f) {
+  state.family = f;
+  document.getElementById('tab-safr').classList.toggle('active', f==='safr');
+  document.getElementById('tab-holas').classList.toggle('active', f==='holas');
+  const c = getColor(f);
+  document.getElementById('vbtn-week').style.background = c;
+  document.getElementById('vbtn-all').style.background = '';
+  document.getElementById('vbtn-week').classList.add('active');
+  document.getElementById('vbtn-all').classList.remove('active');
+  render();
+}
+
+function setView(v) {
+  state.view = v;
+  const c = getColor(state.family);
+  document.getElementById('vbtn-week').classList.toggle('active', v==='week');
+  document.getElementById('vbtn-all').classList.toggle('active', v==='all');
+  document.getElementById('vbtn-week').style.background = v==='week' ? c : '';
+  document.getElementById('vbtn-all').style.background = v==='all' ? c : '';
+  render();
+}
+
+function updateBadges() {
+  ['safr','holas'].forEach(f => {
+    const tasks = myTasks(state.currentWeek, f);
+    const pending = tasks.filter(t=>!isDone(state.currentWeek,t,f)).length;
+    const b = document.getElementById('badge-'+f);
+    b.textContent = pending>0 ? pending+' zbývá' : '✓ hotovo';
+    b.style.background = pending>0 ? '#ff6b6b' : '#6bcb77';
+  });
+}
+
+function render() {
+  const d = new Date();
+  document.getElementById('header-date').textContent = d.toLocaleDateString('cs-CZ',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  updateBadges();
+  const main = document.getElementById('main');
+  main.innerHTML = '';
+  if (state.view==='week') renderWeek(main);
+  else renderAll(main);
+}
+
+function renderWeek(container) {
+  const f = state.family, c = getColor(f);
+  const row = SCHEDULE.find(r=>r.w===state.currentWeek);
+  const todayWeek = getCurrentWeek();
+
+  // Nav
+  const nav = document.createElement('div');
+  nav.className = 'week-nav';
+  nav.innerHTML = `
+    <button class="week-nav-btn" onclick="changeWeek(-1)">◀</button>
+    <div class="week-nav-center">
+      <div class="week-num" style="color:${c}">Týden ${state.currentWeek}</div>
+      <div class="week-date">${row ? row.date+' 2026' : ''}</div>
+      ${state.currentWeek!==todayWeek
+        ? `<button class="today-btn" onclick="goToToday()" style="color:${c};background:${c}22">↩ Dnes</button>`
+        : `<div style="font-size:0.72rem;color:${c};font-weight:700;margin-top:3px">← aktuální týden</div>`}
+    </div>
+    <button class="week-nav-btn" onclick="changeWeek(1)">▶</button>
+  `;
+  container.appendChild(nav);
+  if (!row) return;
+
+  // Progress
+  const prog = weekProgress(state.currentWeek, f);
+  if (prog) {
+    const pct = Math.round(prog.done/prog.total*100);
+    const pw = document.createElement('div');
+    pw.className = 'progress-wrap';
+    pw.innerHTML = `
+      <div class="progress-label">
+        <span>Splněno tento týden</span>
+        <span style="color:${c}">${prog.done}/${prog.total} (${pct}%)</span>
+      </div>
+      <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%;background:${c}"></div></div>
+    `;
+    container.appendChild(pw);
+  }
+
+  // My tasks
+  const myTitle = document.createElement('div');
+  myTitle.className = 'section-title';
+  myTitle.style.color = c;
+  myTitle.textContent = f==='safr' ? '🔵 Úkoly Šafrových' : '🔴 Úkoly Holasových';
+  container.appendChild(myTitle);
+
+  let hasMine = false;
+  TASK_KEYS.forEach(k => {
+    const val = row[k];
+    const wf = whoFor(val, f);
+    if (wf!=='mine' && wf!=='both') return;
+    hasMine = true;
+    const done = isDone(state.currentWeek, k, f);
+    const wClass = wf==='both' ? 'both' : (f==='safr' ? 'safr' : 'holas');
+    const wLabel = wf==='both' ? '🟢 Oba' : (f==='safr' ? '🔵 Šafrovi' : '🔴 Holasovi');
+    const displayTitle = (k==='bazen' && val && val!=='-' && val.length>12)
+      ? '🏊 ' + val : TASK_LABELS[k];
+    const card = document.createElement('div');
+    card.className = 'task-card' + (done?' done':'');
+    card.id = 'tc-'+k;
+    card.style.borderLeftColor = c;
+    card.innerHTML = `
+      <div class="task-check${done?' checked':''}" style="${done?'background:'+c+';':'border-color:'+c+';color:'+c+';'}" onclick="toggle('${k}')">
+        ${done?'✓':''}
+      </div>
+      <div class="task-info">
+        <div class="task-title">${displayTitle}</div>
+        <div class="task-who ${wClass}">${wLabel}</div>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+  if (!hasMine) {
+    container.innerHTML += `<div class="empty"><span class="em">😴</span>Tento týden žádné úkoly!</div>`;
+  }
+
+  // Other family (read-only checkboxes)
+  const otherF = f==='safr' ? 'holas' : 'safr';
+  const otherColor = f==='safr' ? '#ff6b6b' : '#4d96ff';
+  const otherTitle = document.createElement('div');
+  otherTitle.className = 'section-title';
+  otherTitle.style.color = otherColor;
+  otherTitle.textContent = f==='safr' ? '🔴 Holasovi tento týden:' : '🔵 Šafrovi tento týden:';
+  container.appendChild(otherTitle);
+
+  let hasOther = false;
+  TASK_KEYS.forEach(k => {
+    const val = row[k];
+    if (whoFor(val,f)!=='other') return;
+    hasOther = true;
+    const otherDone = isDone(state.currentWeek, k, otherF);
+    const card = document.createElement('div');
+    card.className = 'task-card' + (otherDone ? ' done' : '');
+    card.style.borderLeftColor = otherColor;
+    card.style.opacity = otherDone ? '0.5' : '1';
+    // Read-only checkbox — cursor default, no onclick
+    const checkStyle = otherDone
+      ? `background:${otherColor};border-color:${otherColor};color:white;cursor:default;`
+      : `border-color:${otherColor};color:${otherColor};cursor:default;`;
+    card.innerHTML = `
+      <div class="task-check ${otherDone?'checked':''}" style="${checkStyle}">
+        ${otherDone ? '✓' : ''}
+      </div>
+      <div class="task-info">
+        <div class="task-title">${TASK_LABELS[k]}</div>
+        <div class="task-who ${f==='safr'?'holas':'safr'}">${f==='safr'?'🔴 Holasovi':'🔵 Šafrovi'}</div>
+      </div>
+      ${otherDone ? '<div style="font-size:1.2rem">✅</div>' : '<div style="font-size:1.2rem;color:#ddd">⬜</div>'}
+    `;
+    container.appendChild(card);
+  });
+  if (!hasOther) {
+    const el = document.createElement('div');
+    el.style.cssText='text-align:center;color:var(--muted);font-weight:700;font-size:0.85rem;padding:8px 0 20px';
+    el.textContent = 'Druhá rodina má tento týden volno 🎉';
+    container.appendChild(el);
+  }
+}
+
+function renderAll(container) {
+  const f = state.family, c = getColor(f);
+  let currentMonth = '';
+  SCHEDULE.forEach(row => {
+    const parts = row.date.split(' ');
+    const month = parts[parts.length-1];
+    if (month !== currentMonth) {
+      currentMonth = month;
+      const ml = document.createElement('div');
+      ml.className = 'month-label';
+      ml.textContent = '📅 ' + month.charAt(0).toUpperCase()+month.slice(1)+' 2026';
+      container.appendChild(ml);
+    }
+    const tasks = myTasks(row.w, f);
+    const prog = weekProgress(row.w, f);
+    const isNow = row.w === getCurrentWeek();
+    const wr = document.createElement('div');
+    wr.className = 'week-row'+(isNow?' current-week':'');
+    wr.onclick = () => { state.currentWeek=row.w; setView('week'); };
+    let chips = '';
+    tasks.forEach(k => {
+      const done = isDone(row.w,k,f);
+      chips += `<span class="wr-chip" style="background:${done?c+'33':'#f2f2f2'};color:${done?c:'var(--muted)'};${done?'text-decoration:line-through':''}">
+        ${TASK_LABELS[k].split(' ').slice(1).join(' ')}
+      </span>`;
+    });
+    if (!chips) chips = `<span style="color:var(--muted);font-size:0.72rem;font-weight:600">Volný týden</span>`;
+    const progText = prog ? (prog.done===prog.total ? '✓' : prog.done+'/'+prog.total) : '—';
+    const progColor = prog && prog.done===prog.total && prog.total>0 ? '#6bcb77' : 'var(--muted)';
+    wr.innerHTML = `
+      <div class="wr-num">${row.w}</div>
+      <div class="wr-date">${row.date}</div>
+      <div class="wr-tasks">${chips}</div>
+      <div class="wr-progress" style="color:${progColor}">${progText}</div>
+    `;
+    container.appendChild(wr);
+  });
+}
+
+function toggle(k) {
+  toggleDone(state.currentWeek, k, state.family);
+  const card = document.getElementById('tc-'+k);
+  if (card) {
+    const check = card.querySelector('.task-check');
+    check.classList.add('popping');
+    setTimeout(()=>check.classList.remove('popping'),300);
+  }
+  setTimeout(()=>render(),300);
+}
+function changeWeek(d) { state.currentWeek=Math.max(1,Math.min(52,state.currentWeek+d)); render(); }
+function goToToday() { state.currentWeek=getCurrentWeek(); render(); }
+
+
+load();
+state.currentWeek = getCurrentWeek();
+render();
+
+// ===== NOTIFICATIONS =====
+let notifSettings = { safr:{enabled:false,day:1,time:'08:00'}, holas:{enabled:false,day:1,time:'08:00'} };
+let swReg = null;
+
+// Registrace SW hned na začátku
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js')
+    .then(reg => { swReg = reg; console.log('SW registered'); })
+    .catch(e => console.log('SW error:', e));
+}
+
+function loadNotifSettings() {
+  try { const d=localStorage.getItem('notif-settings-v1'); if(d) notifSettings=JSON.parse(d); } catch(e){}
+  ['safr','holas'].forEach(f => {
+    const s=notifSettings[f];
+    document.getElementById('notif-'+f+'-enabled').checked=s.enabled;
+    document.getElementById('notif-'+f+'-day').value=s.day;
+    document.getElementById('notif-'+f+'-time').value=s.time;
+  });
+}
+
+function saveNotifSettings() {
+  ['safr','holas'].forEach(f => {
+    notifSettings[f]={
+      enabled:document.getElementById('notif-'+f+'-enabled').checked,
+      day:parseInt(document.getElementById('notif-'+f+'-day').value),
+      time:document.getElementById('notif-'+f+'-time').value,
+    };
+  });
+  try { localStorage.setItem('notif-settings-v1',JSON.stringify(notifSettings)); } catch(e){}
+  scheduleNotifications();
+  updateFab();
+}
+
+function updateFab() {
+  const anyEnabled=notifSettings.safr.enabled||notifSettings.holas.enabled;
+  const fab=document.getElementById('settings-fab');
+  fab.style.background=anyEnabled?'linear-gradient(135deg,#4d96ff,#6bcb77)':'#ffffff';
+  fab.style.color=anyEnabled?'white':'#999';
+}
+
+function openSettings() { updatePermissionUI(); document.getElementById('settings-modal').classList.add('open'); }
+function closeSettings() { document.getElementById('settings-modal').classList.remove('open'); }
+document.getElementById('settings-modal').addEventListener('click',function(e){ if(e.target===this) closeSettings(); });
+
+function updatePermissionUI() {
+  const warn=document.getElementById('notif-permission-warn');
+  const ok=document.getElementById('notif-permission-ok');
+  const na=document.getElementById('notif-permission-na');
+  const btn=document.getElementById('notif-allow-btn');
+  warn.style.display='none'; ok.style.display='none'; na.style.display='none';
+  if(!('Notification' in window)) { na.style.display='block'; btn.style.display='none'; return; }
+  if(Notification.permission==='granted') { ok.style.display='block'; btn.style.display='none'; }
+  else if(Notification.permission==='denied') {
+    na.style.display='block';
+    na.textContent='✗ Notifikace jsou blokovány. Odblokuj je v nastavení prohlížeče.';
+    btn.style.display='none';
+  } else { warn.style.display='block'; btn.style.display='block'; }
+}
+
+async function requestPermission() {
+  if(!('Notification' in window)) return;
+  const result=await Notification.requestPermission();
+  updatePermissionUI();
+  if(result==='granted') scheduleNotifications();
+}
+
+function buildNotifBody(family) {
+  const week=getCurrentWeek();
+  const tasks=myTasks(week,family);
+  if(!tasks.length) return null;
+  const pending=tasks.filter(t=>!isDone(week,t,family));
+  if(!pending.length) return null;
+  const names=pending.map(t=>TASK_LABELS[t].split(' ').slice(1).join(' '));
+  return { title:'Domácí úkoly – '+(family==='safr'?'Šafrovi':'Holasovi'), body:'Tento týden: '+names.join(', ') };
+}
+
+// Zobrazí notifikaci přes SW (funguje na mobilu) nebo fallback
+async function showNotification(title, body, tag) {
+  if(swReg) {
+    // Počkej na aktivní SW
+    const reg = await navigator.serviceWorker.ready;
+    await reg.showNotification(title, { body, tag: tag||'ukoly', renotify:true });
+  } else if(Notification.permission==='granted') {
+    // Desktop fallback
+    new Notification(title, { body, tag: tag||'ukoly' });
+  }
+}
+
+async function sendTestNotif() {
+  if(Notification.permission!=='granted') { await requestPermission(); }
+  if(Notification.permission!=='granted') return;
+  const f=state.family;
+  const content=buildNotifBody(f)||{title:'Domácí úkoly',body:'Tento týden máte volno! 🎉'};
+  await showNotification(content.title, content.body, 'ukoly-test');
+}
+
+function scheduleNotifications() {
+  if(window._notifInterval) clearInterval(window._notifInterval);
+  if(!('Notification' in window)||Notification.permission!=='granted') return;
+  window._notifInterval=setInterval(async ()=>{
+    const now=new Date();
+    const dayOfWeek=now.getDay();
+    const timeStr=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+    const dateStr=now.toDateString();
+    ['safr','holas'].forEach(async f=>{
+      const s=notifSettings[f];
+      if(!s.enabled) return;
+      if(dayOfWeek!==s.day) return;
+      if(timeStr!==s.time) return;
+      const lastKey='notif-last-'+f;
+      try { if(localStorage.getItem(lastKey)===dateStr) return; } catch(e){}
+      const content=buildNotifBody(f);
+      if(content) {
+        await showNotification(content.title, content.body, 'ukoly-'+f);
+        try { localStorage.setItem(lastKey,dateStr); } catch(e){}
+      }
+    });
+  },60000);
+}
+
+loadNotifSettings();
+updateFab();
+scheduleNotifications();
+</script>
+</body>
+</html>
