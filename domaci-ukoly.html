@@ -737,27 +737,54 @@ async function sendTestNotif() {
   await showNotification(content.title, content.body, 'ukoly-test');
 }
 
+// Zkontroluje při otevření appky jestli dnes měla přijít notifikace a ještě nepřišla
+async function checkMissedNotifications() {
+  if(!('Notification' in window)||Notification.permission!=='granted') return;
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const dateStr = now.toDateString();
+  for (const f of ['safr','holas']) {
+    const s = notifSettings[f];
+    if(!s.enabled) continue;
+    if(dayOfWeek !== s.day) continue;
+    // Zkontroluj jestli nastavený čas už proběhl dnes
+    const [hh, mm] = s.time.split(':').map(Number);
+    const scheduledMs = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hh, mm, 0).getTime();
+    if(now.getTime() < scheduledMs) continue; // ještě nepřišel čas
+    const lastKey = 'notif-last-'+f;
+    try { if(localStorage.getItem(lastKey)===dateStr) continue; } catch(e){}
+    const content = buildNotifBody(f);
+    if(content) {
+      await showNotification(content.title, content.body, 'ukoly-'+f);
+      try { localStorage.setItem(lastKey, dateStr); } catch(e){}
+    }
+  }
+}
+
 function scheduleNotifications() {
   if(window._notifInterval) clearInterval(window._notifInterval);
   if(!('Notification' in window)||Notification.permission!=='granted') return;
+  // Při spuštění hned zkontroluj zmeškané notifikace
+  checkMissedNotifications();
+  // Pak každou minutu kontroluj přesný čas
   window._notifInterval=setInterval(async ()=>{
     const now=new Date();
     const dayOfWeek=now.getDay();
     const timeStr=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
     const dateStr=now.toDateString();
-    ['safr','holas'].forEach(async f=>{
+    for (const f of ['safr','holas']) {
       const s=notifSettings[f];
-      if(!s.enabled) return;
-      if(dayOfWeek!==s.day) return;
-      if(timeStr!==s.time) return;
+      if(!s.enabled) continue;
+      if(dayOfWeek!==s.day) continue;
+      if(timeStr!==s.time) continue;
       const lastKey='notif-last-'+f;
-      try { if(localStorage.getItem(lastKey)===dateStr) return; } catch(e){}
+      try { if(localStorage.getItem(lastKey)===dateStr) continue; } catch(e){}
       const content=buildNotifBody(f);
       if(content) {
         await showNotification(content.title, content.body, 'ukoly-'+f);
         try { localStorage.setItem(lastKey,dateStr); } catch(e){}
       }
-    });
+    }
   },60000);
 }
 
